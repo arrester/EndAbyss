@@ -1,0 +1,6 @@
+include README.md
+include README_ko.md
+include LICENSE
+include requirements.txt
+recursive-include endabyss/core/config *.yaml
+
