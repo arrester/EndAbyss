@@ -22,7 +22,7 @@ def get_version():
         version = {}
         with open(version_file, 'r', encoding='utf-8') as f:
             exec(f.read(), version)
-        return version.get('__version__', '1.0.0')
+        return version.get('__version__', '1.0.2')
     except:
         return '1.0.0'
 
