@@ -17,13 +17,15 @@ async def main():
     args = parse_args()
     
     is_pipeline = any([args.pipeurl, args.pipeendpoint, args.pipeparam, args.pipejson])
+    silent = args.silent if hasattr(args, 'silent') else False
+    show_output = not is_pipeline and not silent
     
-    if not is_pipeline:
+    if show_output:
         print_banner()
     
     if len(sys.argv) == 1:
         print_usage()
-        if not is_pipeline:
+        if show_output:
             print_status("Please specify the target URL or domain.", "error")
             version_notification = get_version_notification()
             if version_notification:
@@ -37,14 +39,14 @@ async def main():
             with open(args.targetfile, 'r', encoding='utf-8') as f:
                 targets = [line.strip() for line in f if line.strip()]
         except Exception as e:
-            if not is_pipeline:
+            if show_output:
                 print_status(f"Error reading target file: {e}", "error")
             sys.exit(1)
     else:
         targets = [target] if target else []
         
     if not targets:
-        if not is_pipeline:
+        if show_output:
             print_usage()
             print_status("Please specify the target URL or domain.", "error")
             version_notification = get_version_notification()
@@ -60,13 +62,13 @@ async def main():
     }
     
     for target in targets:
-        if not is_pipeline:
+        if show_output:
             print_status(f"Target: {target}", "info")
             
         controller = EndAbyssController(
             target=target,
             mode=args.mode,
-            verbose=0 if is_pipeline else args.verbose,
+            verbose=0 if (is_pipeline or silent) else args.verbose,
             depth=args.depth,
             concurrency=args.concurrency,
             session=args.session,
@@ -88,7 +90,7 @@ async def main():
             include_ext=args.include_ext,
             include_path=args.include_path,
             min_params=args.min_params,
-            silent=is_pipeline
+            silent=(is_pipeline or silent)
         )
         
         results = await controller.scan()
@@ -117,9 +119,9 @@ async def main():
         print(json.dumps(all_results, indent=None, ensure_ascii=False))
     else:
         if controller:
-            controller.print_results(all_results, output_mode, output_path if not is_pipeline else None)
+            controller.print_results(all_results, output_mode, output_path if (is_pipeline or silent) else None)
         
-    if not is_pipeline:
+    if show_output:
         version_notification = get_version_notification()
         if version_notification:
             print()

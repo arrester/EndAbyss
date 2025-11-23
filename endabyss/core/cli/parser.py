@@ -51,8 +51,8 @@ def create_parser():
                       help='Random delay range (e.g. 1-3)')
     parser.add_argument('--timeout',
                       type=int,
-                      default=30,
-                      help='Request timeout in seconds (default: 30)')
+                      default=10,
+                      help='Request timeout in seconds (default: 10)')
     parser.add_argument('--retry',
                       type=int,
                       default=3,
@@ -99,6 +99,8 @@ def create_parser():
                       help='Output parameters only for pipeline')
     parser.add_argument('-pipejson', action='store_true',
                       help='Output all results in JSON format for pipeline')
+    parser.add_argument('--silent', action='store_true',
+                      help='Silent mode (no banner, no progress output)')
                       
     return parser
 

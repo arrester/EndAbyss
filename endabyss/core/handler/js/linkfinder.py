@@ -71,7 +71,7 @@ def extract_endpoints_from_js(content, base_url=None, filter_regex=None):
         else:
             if jsbeautifier:
                 content = jsbeautifier.beautify(content)
-    except:
+    except Exception:
         pass
     
     regex = re.compile(regex_str, re.VERBOSE)
@@ -120,7 +120,7 @@ async def extract_endpoints_from_url(js_url, session=None, base_url=None, filter
                     if response.status == 200:
                         content = await response.text()
                         return extract_endpoints_from_js(content, base_url or js_url, filter_regex)
-    except:
+    except Exception:
         pass
     return []
 

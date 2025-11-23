@@ -64,8 +64,9 @@ class StaticCrawler:
             try:
                 min_delay, max_delay = map(float, self.random_delay.split('-'))
                 return random.uniform(min_delay, max_delay)
-            except:
-                pass
+            except ValueError:
+                if self.verbose >= 1:
+                    print(f"Invalid random-delay format: {self.random_delay}")
         return self.delay
         
     async def _rate_limit_wait(self):
@@ -210,7 +211,6 @@ class StaticCrawler:
             if js_file not in self.visited:
                 js_content = await self._fetch_url(session, js_file)
                 if js_content:
-                    from endabyss.core.handler.js.linkfinder import extract_endpoints_from_js
                     js_endpoints = extract_endpoints_from_js(js_content, self.base_url)
                     for js_endpoint in js_endpoints:
                         parsed_js = urlparse(js_endpoint)

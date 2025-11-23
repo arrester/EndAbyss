@@ -26,7 +26,7 @@ class EndAbyssController:
     def __init__(self, target: str, mode: str = 'static', verbose: int = 0,
                  depth: int = 5, concurrency: int = 10, session: Optional[str] = None,
                  delay: float = 0, random_delay: Optional[str] = None,
-                 timeout: int = 5, retry: int = 3, retry_delay: float = 1.0,
+                 timeout: int = 10, retry: int = 3, retry_delay: float = 1.0,
                  user_agent: Optional[str] = None, proxy: Optional[str] = None,
                  rate_limit: Optional[float] = None, headless: bool = True,
                  wait_time: float = 3.0, dirscan: bool = False,
@@ -87,7 +87,9 @@ class EndAbyssController:
                     return json.loads(content)
                 else:
                     return self._parse_netscape_cookies(content)
-        except:
+        except Exception as e:
+            if self.verbose >= 1:
+                print_status(f"Error loading session file: {e}", "warning", cli_only=not self.silent)
             return None
             
     def _parse_netscape_cookies(self, content: str) -> Dict:
@@ -117,19 +119,21 @@ class EndAbyssController:
             resolver.timeout = 5
             resolver.lifetime = 5
             resolver.resolve(parsed.netloc, 'A')
-        except:
+        except Exception as e:
             if self.verbose >= 1:
-                print_status(f"DNS resolution failed for {target}", "warning", cli_only=not self.silent)
+                print_status(f"DNS resolution failed for {target}: {e}", "warning", cli_only=not self.silent)
             return None
             
         async with aiohttp.ClientSession() as session:
             for scheme in ['https', 'http']:
                 url = f"{scheme}://{target}"
                 try:
-                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=10)) as response:
+                    async with session.get(url, timeout=aiohttp.ClientTimeout(total=10), ssl=False) as response:
                         if response.status < 500:
                             return url
-                except:
+                except Exception as e:
+                    if self.verbose >= 2:
+                        print_status(f"Connection failed for {url}: {e}", "warning", cli_only=not self.silent)
                     continue
                     
         return None

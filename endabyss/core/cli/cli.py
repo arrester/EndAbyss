@@ -120,6 +120,7 @@ def print_usage():
     options_table.add_row("-pipeendpoint", "Output endpoints only for pipeline")
     options_table.add_row("-pipeparam", "Output parameters only for pipeline")
     options_table.add_row("-pipejson", "Output all results in JSON format for pipeline")
+    options_table.add_row("--silent", "Silent mode (no banner, no progress output)")
     
     console.print("\n[bold cyan]Description:[/]")
     console.print("EndAbyss is a fast endpoint discovery tool that crawls websites to collect endpoints and parameters for bug bounty and red team operations.\n")
