@@ -6,6 +6,7 @@ CLI utilities module
 """
 
 import sys
+import os
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -13,6 +14,17 @@ from rich.text import Text
 from rich.box import ROUNDED
 
 console = Console()
+
+def get_version():
+    """Get version from __version__.py"""
+    try:
+        version_file = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '__version__.py')
+        version = {}
+        with open(version_file, 'r', encoding='utf-8') as f:
+            exec(f.read(), version)
+        return version.get('__version__', '1.0.0')
+    except:
+        return '1.0.0'
 
 def is_cli_mode():
     """Check if running in CLI mode"""
@@ -23,7 +35,8 @@ def print_banner(force=False):
     if not is_cli_mode() and not force:
         return
         
-    banner = r"""
+    version = get_version()
+    banner = f"""
     🌊  EndAbyss  🌀
     ----------------------
      _____           _    ___  _                       
@@ -33,13 +46,13 @@ def print_banner(force=False):
     | |___| | | | (_| | | | | | |_) | |_| \__ \__ \   
     \____/|_| |_|\__,_| \_| |_/_.__/ \__, |___/___/   
                                       __/ |            
-                                     |___/         v1.0
+                                     |___/         v{version}
     """
     
     banner_panel = Panel(
         banner,
-        title="[bold cyan]Red Teaming and Web Bug Bounty Fast Endpoint Discovery Tool[/]",
-        subtitle="[bold blue]by. arrester (https://github.com/arrester/endabyss)[/]",
+        title=r"[bold cyan]Red Teaming and Web Bug Bounty Fast Endpoint Discovery Tool[/]",
+        subtitle=r"[bold blue]by. arrester (https://github.com/arrester/endabyss)[/]",
         style="bold blue",
         box=ROUNDED
     )

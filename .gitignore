@@ -219,3 +219,4 @@ test_wordlist.txt
 # 불필요한 파일
 .DS_Store
 endabyss/results/
+PYPI_DEPLOYMENT.md

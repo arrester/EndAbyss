@@ -1,9 +1,17 @@
 import os
 from setuptools import setup, find_namespace_packages
 
+def get_version():
+    """Get version from __version__.py"""
+    version_file = os.path.join(os.path.dirname(__file__), 'endabyss', '__version__.py')
+    version = {}
+    with open(version_file, 'r', encoding='utf-8') as f:
+        exec(f.read(), version)
+    return version['__version__']
+
 setup(
     name="endabyss",
-    version="1.0.0",
+    version=get_version(),
     description="Red Teaming and Web Bug Bounty Fast Endpoint Discovery Tool",
     long_description=open('README.md').read() if os.path.exists('README.md') else '',
     long_description_content_type="text/markdown",

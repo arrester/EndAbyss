@@ -1,17 +1,17 @@
-name: Publish to PyPI
+name: Publish to TestPyPI
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'test-v*'
 
 jobs:
   build-and-publish:
-    name: Build and Publish to PyPI
+    name: Build and Publish to TestPyPI
     runs-on: ubuntu-latest
     environment:
-      name: pypi
-      url: https://pypi.org/p/endabyss
+      name: testpypi
+      url: https://test.pypi.org/p/endabyss
     permissions:
       id-token: write
       contents: read
@@ -37,9 +37,11 @@ jobs:
         python3 -m twine check dist/*
         ls -lh dist/
       
-    - name: Publish to PyPI
+    - name: Publish to TestPyPI
       uses: pypa/gh-action-pypi-publish@release/v1
       with:
+        repository-url: https://test.pypi.org/legacy/
         verbose: true
         print-hash: true
+
 
