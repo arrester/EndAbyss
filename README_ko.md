@@ -5,6 +5,7 @@
 ![Version](https://img.shields.io/badge/version-1.0-orange)
 
 EndAbyss는 버그 헌팅과 레드 팀 작업을 위해 웹사이트를 크롤링하여 엔드포인트와 파라미터를 수집하는 빠른 엔드포인트 발견 도구입니다.
+![alt text](image.png)
 
 <br>
 
@@ -62,6 +63,24 @@ playwright install chromium
 
 <b>파이프라인 연계 예시</b><br>
 `endabyss -t http://example.com -pipeurl | sqlmap --batch`
+
+### SubSurfer와 연계
+SubSurfer로 수집한 웹 서브도메인을 EndAbyss로 엔드포인트 스캔하는 파이프라인 구성:
+
+<b>1. 기본 연계 (웹 서브도메인 → 엔드포인트 수집)</b><br>
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -pipeurl`
+
+<b>2. 결과를 파일로 저장</b><br>
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -o results.txt`
+
+<b>3. 동적 스캔 모드로 연계</b><br>
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -m dynamic -pipeurl`
+
+<b>4. JSON 형식으로 상세 정보 수집</b><br>
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -pipejson`
+
+<b>5. 디렉토리 스캔 포함</b><br>
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -ds -w wordlist.txt -pipeurl`
 
 ### Python 모듈로 사용
 <b>기본 엔드포인트 스캔</b><br>

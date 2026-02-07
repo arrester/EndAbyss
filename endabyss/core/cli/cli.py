@@ -22,9 +22,9 @@ def get_version():
         version = {}
         with open(version_file, 'r', encoding='utf-8') as f:
             exec(f.read(), version)
-        return version.get('__version__', '1.0.3')
+        return version.get('__version__', '1.1.0')
     except:
-        return '1.0.0'
+        return '1.1.0'
 
 def is_cli_mode():
     """Check if running in CLI mode"""
@@ -36,7 +36,7 @@ def print_banner(force=False):
         return
         
     version = get_version()
-    banner = f"""
+    banner = rf"""
     🌊  EndAbyss  🌀
     ----------------------
      _____           _    ___  _                       
@@ -51,8 +51,8 @@ def print_banner(force=False):
     
     banner_panel = Panel(
         banner,
-        title=r"[bold cyan]Red Teaming and Web Bug Bounty Fast Endpoint Discovery Tool[/]",
-        subtitle=r"[bold blue]by. arrester (https://github.com/arrester/endabyss)[/]",
+        title="[bold cyan]Red Teaming and Web Bug Bounty Fast Endpoint Discovery Tool[/]",
+        subtitle="[bold blue]by. arrester (https://github.com/arrester/endabyss)[/]",
         style="bold blue",
         box=ROUNDED
     )

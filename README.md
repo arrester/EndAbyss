@@ -1,15 +1,16 @@
 # 🌊 EndAbyss
 
-![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)
-![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-1.0-orange)
+Python Version
+License
+Version
 
 EndAbyss is a fast endpoint discovery tool that crawls websites to collect endpoints and parameters for bug bounty and red team operations.
+![alt text](image.png)
 
-<br>
 
 ## 🌟 Features
-- **Red Team/Bug Bounty Support**: Useful for both red team operations and web bug bounty projects
+
+- **Red Team/Bug Boun1.0ty Support**: Useful for both red team operations and web bug bounty projects
 - **Static/Dynamic Scanning**: Fast static scanning or Playwright-based dynamic scanning for modern frameworks
 - **Endpoint Discovery**: Automatic collection of endpoints from HTML, JavaScript, and API responses
 - **Parameter Extraction**: Automatic extraction of GET/POST parameters from forms and URLs
@@ -18,10 +19,13 @@ EndAbyss is a fast endpoint discovery tool that crawls websites to collect endpo
 - **WAF Bypass Options**: Delay, random delay, rate limiting, and proxy support
 - **Modular Design**: Can be imported and used as a Python module
 
-<br>
+  
+
 
 ## 🚀 Installation
-<b>bash</b>
+
+**bash**
+
 ```bash
 git clone https://github.com/arrester/endabyss.git
 cd endabyss
@@ -29,42 +33,82 @@ pip install -r requirements.txt
 pip install -e .
 ```
 
-or <br>
+or   
 
-<b>Python</b>
+
+**Python**
+
 ```bash
 pip install endabyss
 ```
 
 For dynamic scanning mode, install Playwright browsers:
+
 ```bash
 playwright install chromium
 ```
 
-<br>
+  
+
 
 ## 📖 Usage
+
 ### CLI Mode
-<b>Basic Scan</b><br>
+
+**Basic Scan**  
+
 `endabyss -t http://example.com`
 
-<b>Dynamic Scanning Mode</b><br>
+**Dynamic Scanning Mode**  
+
 `endabyss -t http://example.com -m dynamic`
 
-<b>Directory Scanning</b><br>
+**Directory Scanning**  
+
 `endabyss -t http://example.com -ds -w wordlist.txt`
 
-<b>Pipeline Output</b><br>
-`endabyss -t http://example.com -pipeurl` # Output URLs only<br>
-`endabyss -t http://example.com -pipeendpoint` # Output endpoints only<br>
-`endabyss -t http://example.com -pipeparam` # Output parameters only<br>
+**Pipeline Output**  
+
+`endabyss -t http://example.com -pipeurl` # Output URLs only  
+
+`endabyss -t http://example.com -pipeendpoint` # Output endpoints only  
+
+`endabyss -t http://example.com -pipeparam` # Output parameters only  
+
 `endabyss -t http://example.com -pipejson` # Output JSON format
 
-<b>Pipeline Integration Example</b><br>
+**Pipeline Integration Example**  
+
 `endabyss -t http://example.com -pipeurl | sqlmap --batch`
 
+### Integration with SubSurfer
+Pipeline configuration for scanning endpoints with EndAbyss from web subdomains collected by SubSurfer:
+
+**1. Basic Integration (Web Subdomains → Endpoint Collection)**  
+
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -pipeurl`
+
+**2. Save Results to File**  
+
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -o results.txt`
+
+**3. Integration with Dynamic Scan Mode**  
+
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -m dynamic -pipeurl`
+
+**4. Collect Detailed Information in JSON Format**  
+
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -pipejson`
+
+**5. Include Directory Scanning**  
+
+`subsurfer -t example.com -pipeweb | xargs -I {} endabyss -t {} -ds -w wordlist.txt -pipeurl`
+
 ### Using as a Python Module
-<b>Basic Endpoint Scan</b><br>
+
+**Basic Endpoint Scan**  
+
+
 ```python
 from endabyss.core.controller.controller import EndAbyssController
 import asyncio
@@ -93,9 +137,12 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-<br>
+  
 
-<b>Dynamic Scanning</b><br>
+
+**Dynamic Scanning**  
+
+
 ```python
 from endabyss.core.controller.controller import EndAbyssController
 import asyncio
@@ -117,9 +164,12 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-<br>
+  
 
-<b>Result Save</b><br>
+
+**Result Save**  
+
+
 ```python
 from endabyss.core.controller.controller import EndAbyssController
 import asyncio
@@ -137,7 +187,8 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
-<br>
+  
+
 
 ## 🔧 Key Features from Reference Tools
 
@@ -148,31 +199,36 @@ EndAbyss incorporates key features from various reference tools:
 - **ParamSpider**: Parameter extraction and URL cleaning techniques
 - **SubSurfer**: CLI design, pipeline integration, and modular architecture
 
-<br>
+  
+
 
 ## 📋 Available Options
 
-| Option | Description |
-|--------|-------------|
-| `-t, --target` | Target URL or domain |
-| `-tf, --targetfile` | File containing list of targets |
-| `-m, --mode` | Scan mode: static (default) or dynamic |
-| `-d, --depth` | Crawling depth (default: 5) |
-| `-c, --concurrency` | Number of concurrent requests (default: 10) |
-| `-ds, --dirscan` | Enable directory scanning |
-| `-w, --wordlist` | Wordlist file for directory scanning |
-| `--delay` | Delay between requests in seconds |
-| `--random-delay` | Random delay range (e.g. 1-3) |
-| `--proxy` | Proxy URL (HTTP/HTTPS/SOCKS5) |
-| `--rate-limit` | Rate limit (requests per second) |
-| `-pipeurl` | Output URLs only for pipeline |
-| `-pipeendpoint` | Output endpoints only for pipeline |
-| `-pipeparam` | Output parameters only for pipeline |
-| `-pipejson` | Output JSON format for pipeline |
 
-<br>
+| Option              | Description                                 |
+| ------------------- | ------------------------------------------- |
+| `-t, --target`      | Target URL or domain                        |
+| `-tf, --targetfile` | File containing list of targets             |
+| `-m, --mode`        | Scan mode: static (default) or dynamic      |
+| `-d, --depth`       | Crawling depth (default: 5)                 |
+| `-c, --concurrency` | Number of concurrent requests (default: 10) |
+| `-ds, --dirscan`    | Enable directory scanning                   |
+| `-w, --wordlist`    | Wordlist file for directory scanning        |
+| `--delay`           | Delay between requests in seconds           |
+| `--random-delay`    | Random delay range (e.g. 1-3)               |
+| `--proxy`           | Proxy URL (HTTP/HTTPS/SOCKS5)               |
+| `--rate-limit`      | Rate limit (requests per second)            |
+| `-pipeurl`          | Output URLs only for pipeline               |
+| `-pipeendpoint`     | Output endpoints only for pipeline          |
+| `-pipeparam`        | Output parameters only for pipeline         |
+| `-pipejson`         | Output JSON format for pipeline             |
+
+
+  
+
 
 ## 📋 Requirements
+
 - Recommended: Python 3.13.0 or later
 - aiohttp
 - beautifulsoup4
@@ -181,7 +237,9 @@ EndAbyss incorporates key features from various reference tools:
 - requests
 
 ## 📝 License
+
 MIT License
 
 ## 🤝 Contributions
+
 Bug Report, Feature Suggestions, Issue Report

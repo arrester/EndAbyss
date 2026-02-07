@@ -189,7 +189,7 @@ class DynamicCrawler:
             await asyncio.sleep(delay)
             
         async with self.semaphore:
-            context = await browser.new_context()
+            context = await browser.new_context(ignore_https_errors=True)
             if self.session_data:
                 if 'cookies' in self.session_data:
                     await context.add_cookies(self.session_data['cookies'])

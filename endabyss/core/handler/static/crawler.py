@@ -92,7 +92,10 @@ class StaticCrawler:
                 if 'headers' in self.session_data:
                     headers.update(self.session_data['headers'])
         
-        connector = aiohttp.TCPConnector(limit=self.concurrency)
+        connector = aiohttp.TCPConnector(
+            limit=self.concurrency,
+            ssl=False
+        )
         return aiohttp.ClientSession(
             headers=headers,
             cookies=cookies,

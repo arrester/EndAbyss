@@ -91,7 +91,8 @@ class DirectoryScanner:
         
     async def scan(self) -> List[Dict]:
         """Start directory scanning"""
-        async with aiohttp.ClientSession(timeout=self.timeout) as session:
+        connector = aiohttp.TCPConnector(ssl=False)
+        async with aiohttp.ClientSession(timeout=self.timeout, connector=connector) as session:
             tasks = [self._check_path(session, word) for word in self.wordlist]
             results = await asyncio.gather(*tasks, return_exceptions=True)
             
