@@ -2,7 +2,7 @@
 
 ![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
-![Version](https://img.shields.io/badge/version-1.0-orange)
+![Version](https://img.shields.io/badge/version-1.2-orange)
 
 EndAbyss는 버그 헌팅과 레드 팀 작업을 위해 웹사이트를 크롤링하여 엔드포인트와 파라미터를 수집하는 빠른 엔드포인트 발견 도구입니다.
 ![alt text](image.png)

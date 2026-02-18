@@ -5,7 +5,7 @@
 Static HTML parser module
 """
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Comment
 from urllib.parse import urljoin, urlparse, parse_qs, urlencode
 from typing import List, Dict, Set, Tuple
 import re
@@ -115,7 +115,15 @@ class StaticParser:
             full_url = urljoin(current_url, href)
             if not self._should_exclude(full_url):
                 results['endpoints'].add(full_url)
-                    
+
+        for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
+            comment_endpoints, comment_forms = self._parse_html_comment(str(comment), current_url)
+            for url in comment_endpoints:
+                if not self._should_exclude(url):
+                    results['endpoints'].add(url)
+            for form_data in comment_forms:
+                results['forms'].append(form_data)
+
         for form in soup.find_all('form'):
             form_data = self._parse_form(form, current_url)
             if form_data:
@@ -127,6 +135,57 @@ class StaticParser:
             'js_files': list(results['js_files'])
         }
     
+    def _parse_html_comment(self, comment_text: str, current_url: str):
+        """Parse HTML comment and extract endpoints and forms"""
+        endpoints = set()
+        forms = []
+
+        try:
+            comment_soup = BeautifulSoup(comment_text, 'html.parser')
+
+            for tag in comment_soup.find_all('a', href=True):
+                href = tag['href']
+                if href.startswith('javascript:') or href.startswith('mailto:') or href.startswith('#'):
+                    continue
+                full_url = urljoin(current_url, href)
+                endpoints.add(full_url)
+
+            for tag in comment_soup.find_all(attrs={'onclick': True}):
+                onclick = tag.get('onclick', '')
+                urls = self._extract_urls_from_js(onclick, current_url)
+                endpoints.update(urls)
+
+            for tag in comment_soup.find_all(True):
+                for attr in ('href', 'src', 'action', 'data-href', 'data-url'):
+                    val = tag.get(attr)
+                    if val and not val.startswith(('javascript:', 'mailto:', '#')):
+                        full_url = urljoin(current_url, val)
+                        endpoints.add(full_url)
+
+            js_patterns = [
+                r'location\.href\s*=\s*["\']([^"\']+)["\']',
+                r'location\.assign\s*\(\s*["\']([^"\']+)["\']',
+                r'location\.replace\s*\(\s*["\']([^"\']+)["\']',
+                r'window\.open\s*\(\s*["\']([^"\']+)["\']',
+                r'window\.location\s*=\s*["\']([^"\']+)["\']',
+            ]
+            for pattern in js_patterns:
+                for match in re.finditer(pattern, comment_text, re.IGNORECASE):
+                    url = match.group(1)
+                    if url:
+                        full_url = urljoin(current_url, url)
+                        endpoints.add(full_url)
+
+            for form_tag in comment_soup.find_all('form'):
+                form_data = self._parse_form(form_tag, current_url)
+                if form_data:
+                    forms.append(form_data)
+
+        except Exception:
+            pass
+
+        return list(endpoints), forms
+
     def _extract_urls_from_js(self, js_content: str, base_url: str) -> List[str]:
         """Extract URLs from JavaScript code"""
         urls = set()

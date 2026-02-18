@@ -1,8 +1,8 @@
 # 🌊 EndAbyss
 
-Python Version
-License
-Version
+![Python Version](https://img.shields.io/badge/python-3.13%2B-blue)
+![License](https://img.shields.io/badge/license-MIT-green)
+![Version](https://img.shields.io/badge/version-1.2-orange)
 
 EndAbyss is a fast endpoint discovery tool that crawls websites to collect endpoints and parameters for bug bounty and red team operations.
 ![alt text](image.png)
@@ -10,7 +10,7 @@ EndAbyss is a fast endpoint discovery tool that crawls websites to collect endpo
 
 ## 🌟 Features
 
-- **Red Team/Bug Boun1.0ty Support**: Useful for both red team operations and web bug bounty projects
+- **Red Team/Bug Bounty Support**: Useful for both red team operations and web bug bounty projects
 - **Static/Dynamic Scanning**: Fast static scanning or Playwright-based dynamic scanning for modern frameworks
 - **Endpoint Discovery**: Automatic collection of endpoints from HTML, JavaScript, and API responses
 - **Parameter Extraction**: Automatic extraction of GET/POST parameters from forms and URLs

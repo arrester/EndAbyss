@@ -9,9 +9,11 @@ from playwright.async_api import async_playwright, Browser, Page, BrowserContext
 from urllib.parse import urljoin, urlparse
 from typing import Dict, List, Set, Optional
 from collections import deque
+from bs4 import BeautifulSoup, Comment
 import asyncio
 import random
 import time
+import re
 
 class DynamicCrawler:
     """Dynamic crawler using Playwright"""
@@ -83,6 +85,69 @@ class DynamicCrawler:
             
         return False
         
+    def _parse_html_comments(self, html_content: str, current_url: str):
+        """Parse HTML comments and extract endpoints and forms"""
+        endpoints = set()
+        forms = []
+
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            for comment in soup.find_all(string=lambda text: isinstance(text, Comment)):
+                comment_text = str(comment)
+                try:
+                    comment_soup = BeautifulSoup(comment_text, 'html.parser')
+
+                    for tag in comment_soup.find_all('a', href=True):
+                        href = tag['href']
+                        if href.startswith(('javascript:', 'mailto:', '#')):
+                            continue
+                        endpoints.add(urljoin(current_url, href))
+
+                    for tag in comment_soup.find_all(True):
+                        for attr in ('href', 'src', 'action', 'data-href', 'data-url'):
+                            val = tag.get(attr)
+                            if val and not val.startswith(('javascript:', 'mailto:', '#')):
+                                endpoints.add(urljoin(current_url, val))
+
+                    js_patterns = [
+                        r'location\.href\s*=\s*["\']([^"\']+)["\']',
+                        r'location\.assign\s*\(\s*["\']([^"\']+)["\']',
+                        r'location\.replace\s*\(\s*["\']([^"\']+)["\']',
+                        r'window\.open\s*\(\s*["\']([^"\']+)["\']',
+                        r'window\.location\s*=\s*["\']([^"\']+)["\']',
+                    ]
+                    for pattern in js_patterns:
+                        for match in re.finditer(pattern, comment_text, re.IGNORECASE):
+                            url = match.group(1)
+                            if url:
+                                endpoints.add(urljoin(current_url, url))
+
+                    for form_tag in comment_soup.find_all('form'):
+                        action = form_tag.get('action', '') or current_url
+                        method = (form_tag.get('method', 'GET') or 'GET').upper()
+                        action_url = urljoin(current_url, action)
+                        parameters = {}
+                        for input_tag in form_tag.find_all(['input', 'textarea', 'select']):
+                            name = input_tag.get('name')
+                            if not name:
+                                continue
+                            input_type = input_tag.get('type', 'text').lower()
+                            if input_type in ['submit', 'button', 'reset', 'image']:
+                                continue
+                            parameters[name] = input_tag.get('value', '')
+                        if parameters:
+                            forms.append({
+                                'url': action_url,
+                                'method': method,
+                                'parameters': parameters
+                            })
+                except Exception:
+                    pass
+        except Exception:
+            pass
+
+        return list(endpoints), forms
+
     def _get_delay(self) -> float:
         """Calculate delay for next request"""
         if self.random_delay:
@@ -120,7 +185,7 @@ class DynamicCrawler:
                     const forms = [];
                     document.querySelectorAll('form').forEach(form => {
                         const formData = {
-                            action: form.action || window.location.href,
+                            url: form.action || window.location.href,
                             method: (form.method || 'GET').toUpperCase(),
                             parameters: {}
                         };
@@ -166,11 +231,45 @@ class DynamicCrawler:
                 if not self.min_params or len(form['parameters']) >= self.min_params:
                     results['forms'].append(form)
                     results['parameters'].append({
-                        'url': form['action'],
+                        'url': form['url'],
                         'method': form['method'],
                         'parameters': form['parameters']
                     })
-                    
+
+            raw_html = await page.content()
+            comment_endpoints, comment_forms = self._parse_html_comments(raw_html, url)
+            for ep_url in comment_endpoints:
+                if not self._should_exclude(ep_url):
+                    parsed_ep = urlparse(ep_url)
+                    if parsed_ep.netloc == self.base_domain or not parsed_ep.netloc:
+                        full_ep = urljoin(self.base_url, ep_url)
+                        if parsed_ep.query:
+                            params = {}
+                            for param in parsed_ep.query.split('&'):
+                                if '=' in param:
+                                    k, v = param.split('=', 1)
+                                    params[k] = v
+                            if not self.min_params or len(params) >= self.min_params:
+                                results['parameters'].append({
+                                    'url': full_ep.split('?')[0],
+                                    'method': 'GET',
+                                    'parameters': params
+                                })
+                        else:
+                            results['endpoints'].append({
+                                'url': full_ep,
+                                'method': 'GET',
+                                'parameters': {}
+                            })
+            for form_data in comment_forms:
+                if not self.min_params or len(form_data.get('parameters', {})) >= self.min_params:
+                    results['forms'].append(form_data)
+                    results['parameters'].append({
+                        'url': form_data['url'],
+                        'method': form_data['method'],
+                        'parameters': form_data.get('parameters', {})
+                    })
+
         except Exception as e:
             if self.verbose >= 1:
                 print(f"Error extracting from {url}: {e}")

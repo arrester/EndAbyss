@@ -22,9 +22,9 @@ def get_version():
         version = {}
         with open(version_file, 'r', encoding='utf-8') as f:
             exec(f.read(), version)
-        return version.get('__version__', '1.1.0')
+        return version.get('__version__', '1.2.0')
     except:
-        return '1.1.0'
+        return '1.2.0'
 
 def is_cli_mode():
     """Check if running in CLI mode"""
