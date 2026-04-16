@@ -103,8 +103,8 @@ class StaticCrawler:
             connector=connector
         )
         
-    async def _fetch_url(self, session: aiohttp.ClientSession, url: str) -> Optional[str]:
-        """Fetch URL with retry logic"""
+    async def _fetch_url(self, session: aiohttp.ClientSession, url: str) -> tuple:
+        """Fetch URL with retry logic, returns (content, status_code)"""
         for attempt in range(self.retry):
             try:
                 await self._rate_limit_wait()
@@ -112,19 +112,22 @@ class StaticCrawler:
                 async with self.semaphore:
                     async with session.get(url, proxy=self.proxy) as response:
                         if response.status == 200:
-                            return await response.text()
+                            return await response.text(), 200
                         elif response.status in [301, 302, 307, 308]:
                             location = response.headers.get('Location')
                             if location:
                                 return await self._fetch_url(session, urljoin(url, location))
+                            return None, response.status
+                        else:
+                            return None, response.status
             except Exception as e:
                 if self.verbose >= 2:
                     print(f"Error fetching {url} (attempt {attempt + 1}/{self.retry}): {e}")
                 if attempt < self.retry - 1:
                     await asyncio.sleep(self.retry_delay)
                 else:
-                    return None
-        return None
+                    return None, 0
+        return None, 0
         
     async def _crawl_page(self, session: aiohttp.ClientSession, url: str, current_depth: int):
         """Crawl a single page"""
@@ -137,9 +140,28 @@ class StaticCrawler:
         if delay > 0:
             await asyncio.sleep(delay)
             
-        content = await self._fetch_url(session, url)
+        content, status_code = await self._fetch_url(session, url)
+
+        existing = next((e for e in self.results['endpoints'] if e['url'] == url), None)
+        if existing:
+            existing['status'] = status_code
+        else:
+            self.results['endpoints'].append({
+                'url': url,
+                'method': 'GET',
+                'parameters': {},
+                'status': status_code
+            })
+
         if not content:
             return
+
+        if self.parser.detect_directory_listing(content):
+            if self.verbose >= 1:
+                print(f"[!] Directory listing detected: {url}")
+            ep = next((e for e in self.results['endpoints'] if e['url'] == url), None)
+            if ep:
+                ep['directory_listing'] = True
             
         parsed = self.parser.parse_html(content, url)
         
@@ -167,7 +189,8 @@ class StaticCrawler:
                     self.results['endpoints'].append({
                         'url': normalized_url,
                         'method': 'GET',
-                        'parameters': {}
+                        'parameters': {},
+                        'status': None
                     })
                 if current_depth < self.depth:
                     self.queue.append((normalized_url, current_depth + 1))
@@ -212,7 +235,7 @@ class StaticCrawler:
                 
         for js_file in parsed['js_files']:
             if js_file not in self.visited:
-                js_content = await self._fetch_url(session, js_file)
+                js_content, _ = await self._fetch_url(session, js_file)
                 if js_content:
                     js_endpoints = extract_endpoints_from_js(js_content, self.base_url)
                     for js_endpoint in js_endpoints:
@@ -233,7 +256,8 @@ class StaticCrawler:
                                         self.results['endpoints'].append({
                                             'url': normalized_url,
                                             'method': 'GET',
-                                            'parameters': {}
+                                            'parameters': {},
+                                            'status': None
                                         })
                                     
     async def crawl(self) -> Dict:

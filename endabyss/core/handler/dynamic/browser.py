@@ -15,6 +15,8 @@ import random
 import time
 import re
 
+from endabyss.core.handler.static.parser import _is_mime_type_value
+
 class DynamicCrawler:
     """Dynamic crawler using Playwright"""
     
@@ -106,7 +108,7 @@ class DynamicCrawler:
                     for tag in comment_soup.find_all(True):
                         for attr in ('href', 'src', 'action', 'data-href', 'data-url'):
                             val = tag.get(attr)
-                            if val and not val.startswith(('javascript:', 'mailto:', '#')):
+                            if val and not val.startswith(('javascript:', 'mailto:', '#')) and not _is_mime_type_value(val):
                                 endpoints.add(urljoin(current_url, val))
 
                     js_patterns = [
@@ -124,6 +126,8 @@ class DynamicCrawler:
 
                     for form_tag in comment_soup.find_all('form'):
                         action = form_tag.get('action', '') or current_url
+                        if action.strip().lower().startswith('javascript:'):
+                            continue
                         method = (form_tag.get('method', 'GET') or 'GET').upper()
                         action_url = urljoin(current_url, action)
                         parameters = {}

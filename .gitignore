@@ -220,3 +220,5 @@ test_wordlist.txt
 .DS_Store
 endabyss/results/
 PYPI_DEPLOYMENT.md
+tmp/
+.cursor/

@@ -11,6 +11,8 @@ try:
 except ImportError:
     jsbeautifier = None
 
+from endabyss.core.handler.static.parser import _is_mime_type_value
+
 regex_str = r"""
 
   (?:"|')                               # Start newline delimiter
@@ -80,6 +82,9 @@ def extract_endpoints_from_js(content, base_url=None, filter_regex=None):
         endpoint = match.group(1)
         
         if filter_regex and not re.search(filter_regex, endpoint):
+            continue
+
+        if _is_mime_type_value(endpoint) or _is_mime_type_value(endpoint.lstrip('/.')):
             continue
             
         if base_url:

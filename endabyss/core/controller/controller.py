@@ -150,6 +150,29 @@ class EndAbyssController:
             return self.config.get('status_codes', [200, 201, 202, 204, 301, 302, 307, 401, 403])
         return [int(code.strip()) for code in value.split(',') if code.strip().isdigit()]
         
+    async def _get_robots_disallow_paths(self, url: str) -> List[str]:
+        """Fetch robots.txt and extract Disallow paths for use in directory scanning"""
+        robots_url = f"{url.rstrip('/')}/robots.txt"
+        paths = []
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(
+                    robots_url,
+                    timeout=aiohttp.ClientTimeout(total=10),
+                    ssl=False
+                ) as response:
+                    if response.status == 200:
+                        content = await response.text()
+                        for line in content.split('\n'):
+                            line = line.strip()
+                            if line.lower().startswith('disallow:'):
+                                path = line[9:].strip()
+                                if path and path != '/' and not path.startswith('*'):
+                                    paths.append(path.lstrip('/'))
+        except Exception:
+            pass
+        return paths
+
     async def scan(self) -> Dict:
         """Execute scan"""
         url = await self._validate_target(self.target)
@@ -189,8 +212,13 @@ class EndAbyssController:
         if self.dirscan:
             if not self.silent:
                 print_status("Starting directory scan", "info")
+
+            robots_paths = await self._get_robots_disallow_paths(url)
+            if robots_paths and not self.silent:
+                print_status(f"Found {len(robots_paths)} paths from robots.txt Disallow", "info")
+
             dir_scanner = DirectoryScanner(
-                url, wordlist_file=self.wordlist,
+                url, wordlist=robots_paths, wordlist_file=self.wordlist,
                 status_codes=self._parse_status_codes(self.status_codes),
                 concurrency=self.concurrency, timeout=self.timeout,
                 verbose=self.verbose
@@ -200,15 +228,35 @@ class EndAbyssController:
             for dir_result in dir_results:
                 dir_url = dir_result['url']
                 if dir_url not in [r['url'] for r in results['endpoints']]:
-                    results['endpoints'].append({
+                    entry = {
                         'url': dir_url,
                         'method': 'GET',
                         'parameters': {},
-                        'source': 'dirscan'
-                    })
+                        'source': 'dirscan',
+                        'status': dir_result.get('status')
+                    }
+                    if dir_result.get('directory_listing'):
+                        entry['directory_listing'] = True
+                    results['endpoints'].append(entry)
                     
         return results
         
+    def _format_status(self, status) -> str:
+        """Return a rich-formatted status code string"""
+        if status is None:
+            return "[dim][-][/]  "
+        if status == 200:
+            return f"[bold green][{status}][/]"
+        if status in (201, 204):
+            return f"[green][{status}][/]"
+        if status in (301, 302, 307, 308):
+            return f"[yellow][{status}][/]"
+        if status in (401, 403):
+            return f"[red][{status}][/]"
+        if status >= 500:
+            return f"[bold red][{status}][/]"
+        return f"[dim][{status}][/]"
+
     def get_output_path(self, user_path: str = None) -> str:
         """Generate output file path"""
         timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M')
@@ -301,8 +349,17 @@ class EndAbyssController:
                 print_status("Endpoints Discovered:", "info")
                 for endpoint in results['endpoints']:
                     source = endpoint.get('source', 'crawl')
-                    prefix = "[DIRSCAN] " if source == 'dirscan' else ""
-                    console.print(f"[cyan]{prefix}{endpoint['url']}[/]")
+                    status = endpoint.get('status')
+                    is_dirlist = endpoint.get('directory_listing', False)
+
+                    status_str = self._format_status(status)
+                    tag_str = ""
+                    if is_dirlist:
+                        tag_str += "[bold yellow][DIRLIST][/] "
+                    if source == 'dirscan':
+                        tag_str += "[bold magenta][DIRSCAN][/] "
+
+                    console.print(f"{status_str} {tag_str}[cyan]{endpoint['url']}[/]")
             
             if results.get('forms'):
                 print_status("Forms Discovered:", "info")

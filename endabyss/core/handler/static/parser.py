@@ -10,6 +10,19 @@ from urllib.parse import urljoin, urlparse, parse_qs, urlencode
 from typing import List, Dict, Set, Tuple
 import re
 
+_MIME_TYPE_PREFIXES = (
+    'text/', 'application/', 'image/', 'audio/', 'video/',
+    'multipart/', 'font/', 'model/', 'message/'
+)
+
+def _is_mime_type_value(value: str) -> bool:
+    """Check if value looks like a MIME type (e.g. text/html, application/json)"""
+    if not value or value.startswith('/') or '://' in value:
+        return False
+    val_lower = value.lower()
+    return any(val_lower.startswith(prefix) for prefix in _MIME_TYPE_PREFIXES)
+
+
 class StaticParser:
     """Parser for static HTML content"""
     
@@ -158,7 +171,7 @@ class StaticParser:
             for tag in comment_soup.find_all(True):
                 for attr in ('href', 'src', 'action', 'data-href', 'data-url'):
                     val = tag.get(attr)
-                    if val and not val.startswith(('javascript:', 'mailto:', '#')):
+                    if val and not val.startswith(('javascript:', 'mailto:', '#')) and not _is_mime_type_value(val):
                         full_url = urljoin(current_url, val)
                         endpoints.add(full_url)
 
@@ -214,7 +227,7 @@ class StaticParser:
         for pattern in url_patterns:
             for match in re.finditer(pattern, js_content, re.IGNORECASE):
                 url = match.group(1)
-                if url:
+                if url and not _is_mime_type_value(url):
                     if '?' in url or url.startswith('http') or url.startswith('/') or '.' in url:
                         full_url = urljoin(base_url, url)
                         urls.add(full_url)
@@ -225,6 +238,9 @@ class StaticParser:
         """Parse form tag and extract parameters"""
         action = form_tag.get('action', '')
         method = form_tag.get('method', 'GET').upper()
+        
+        if action and action.strip().lower().startswith('javascript:'):
+            return None
         
         if not action:
             action = base_url
@@ -285,6 +301,17 @@ class StaticParser:
             'parameters': {k: v[0] if len(v) == 1 else v for k, v in params.items()}
         }
         
+    def detect_directory_listing(self, html_content: str) -> bool:
+        """Detect directory listing pages by checking h1 tag for 'Index of'"""
+        try:
+            soup = BeautifulSoup(html_content, 'html.parser')
+            for h1 in soup.find_all('h1'):
+                if 'index of' in h1.get_text(strip=True).lower():
+                    return True
+        except Exception:
+            pass
+        return False
+
     def extract_api_endpoints(self, content: str) -> List[str]:
         """Extract API endpoints from JSON responses or API patterns"""
         endpoints = set()
